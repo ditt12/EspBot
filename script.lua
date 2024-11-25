@@ -1,12 +1,12 @@
 local activePlayers = {}
-local updateInterval = 0.5
+local updateInterval = 0.1  -- Percepat interval pembaruan menjadi lebih cepat
 local mouse = game.Players.LocalPlayer:GetMouse()
 local localPlayer = game.Players.LocalPlayer
 local closestPlayer = nil
 
 local magicBulletEnabled = true -- Aktifkan Magic Bullet
-local magicBulletRange = 1000 -- Rentang Magic Bullet lebih lebar
-local magicBulletSize = 10 -- Ukuran Magic Bullet lebih besar
+local magicBulletRange = 2000 -- Rentang Magic Bullet lebih jauh
+local magicBulletSize = 20 -- Ukuran Magic Bullet lebih besar
 
 local function CreateESP(player)
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -73,7 +73,6 @@ local function GetClosestPlayer()
                 closestPlayer = player
                 shortestDistance = distance
             end
-        end
     end
     return closestPlayer
 end
@@ -106,11 +105,14 @@ local function FireMagicBullet()
             -- Bergerak ke target (tembakan instan)
             local direction = (bulletEndPos - bulletStartPos).unit
             bullet.CFrame = CFrame.new(bullet.Position, bullet.Position + direction)
+
             -- Bisa tambah efek atau partikel tembakan di sini
+            game:GetService("TweenService"):Create(bullet, TweenInfo.new(0.2), {Size = Vector3.new(magicBulletSize * 2, magicBulletSize * 2, (bulletStartPos - bulletEndPos).Magnitude * 2)}):Play()
         end
     end
 end
 
+-- Pindahkan text label ke PlayerGui agar tidak hilang saat respawn
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
