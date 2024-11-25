@@ -4,6 +4,9 @@ local mouse = game.Players.LocalPlayer:GetMouse()
 local localPlayer = game.Players.LocalPlayer
 local closestPlayer = nil
 
+local magicBulletEnabled = true -- Aktifkan Magic Bullet
+local magicBulletRange = 500 -- Rentang Magic Bullet
+
 local function CreateESP(player)
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local highlight = Instance.new("Highlight")
@@ -33,6 +36,14 @@ local function ApplyESP()
             end
         end
     end
+end
+
+local function UpdateESPOnRespawn(player)
+    -- Cek saat karakter baru respawn, tambahkan ESP lagi
+    player.CharacterAdded:Connect(function(character)
+        wait(1)  -- Tunggu sampai karakter benar-benar muncul
+        CreateESP(player)
+    end)
 end
 
 local function GetRGBColor()
@@ -75,6 +86,30 @@ local function AimLock()
     end
 end
 
+local function FireMagicBullet()
+    if magicBulletEnabled and closestPlayer and closestPlayer.Character then
+        local bulletStartPos = localPlayer.Character.HumanoidRootPart.Position
+        local bulletEndPos = closestPlayer.Character.HumanoidRootPart.Position
+
+        -- Cek jarak tembakan
+        if (bulletStartPos - bulletEndPos).Magnitude <= magicBulletRange then
+            -- Simulasi Magic Bullet (tembak langsung ke target)
+            local bullet = Instance.new("Part")
+            bullet.Size = Vector3.new(0.2, 0.2, (bulletStartPos - bulletEndPos).Magnitude)
+            bullet.Position = (bulletStartPos + bulletEndPos) / 2
+            bullet.Anchored = true
+            bullet.CanCollide = false
+            bullet.BrickColor = BrickColor.new("Bright red")
+            bullet.Parent = workspace
+
+            -- Bergerak ke target (tembakan instan)
+            local direction = (bulletEndPos - bulletStartPos).unit
+            bullet.CFrame = CFrame.new(bullet.Position, bullet.Position + direction)
+            -- Bisa tambah efek atau partikel tembakan di sini
+        end
+    end
+end
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
@@ -97,6 +132,9 @@ game:GetService("Players").PlayerAdded:Connect(function(player)
         -- Remove ESP when a player leaves the game or dies
         RemoveESP(player)
     end)
+
+    -- Update ESP saat respawn
+    UpdateESPOnRespawn(player)
 end)
 
 game:GetService("Players").PlayerRemoving:Connect(function(player)
@@ -111,5 +149,6 @@ while wait(updateInterval) do
     if closest then
         closestPlayer = closest
         AimLock()
+        FireMagicBullet() -- Tambahkan Magic Bullet di sini
     end
 end
