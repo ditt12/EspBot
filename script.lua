@@ -62,6 +62,20 @@ textLabel.Size = UDim2.new(0, 200, 0, 50)
 textLabel.BackgroundTransparency = 1
 textLabel.TextSize = 20
 
+local function EnableGodMode()
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        local humanoid = player.Character.Humanoid
+        humanoid.Health = humanoid.Health -- Set Health biar ga berkurang
+        humanoid.MaxHealth = math.huge  -- Maksimum kesehatan jadi tak terbatas
+        humanoid.HealthChanged:Connect(function()
+            humanoid.Health = humanoid.MaxHealth -- Reset Health ke max terus
+        end)
+    end
+end
+
+EnableGodMode()
+
 while wait(1) do
     ApplyESP()
 end
