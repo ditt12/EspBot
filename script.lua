@@ -1,18 +1,33 @@
+local activePlayers = {}
+local updateInterval = 0.5 -- Interval update ESP (lebih jarang supaya tidak memberatkan)
+
 local function CreateESP(player)
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local highlight = Instance.new("Highlight")
         highlight.Parent = player.Character
-        highlight.FillColor = Color3.new(1, 1, 1)
-        highlight.OutlineColor = Color3.new(0, 0, 0)
+        highlight.FillColor = Color3.new(1, 1, 1) -- Warna putih
+        highlight.OutlineColor = Color3.new(0, 0, 0) -- Outline hitam
         highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         highlight.Enabled = true
+        activePlayers[player] = highlight
+    end
+end
+
+local function RemoveESP(player)
+    if activePlayers[player] then
+        activePlayers[player]:Destroy()
+        activePlayers[player] = nil
     end
 end
 
 local function ApplyESP()
     for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and not player.Character:FindFirstChildOfClass("Highlight") then
-            CreateESP(player)
+        if player ~= game.Players.LocalPlayer then
+            if player.Character and not activePlayers[player] then
+                CreateESP(player)
+            elseif player.Character == nil and activePlayers[player] then
+                RemoveESP(player)
+            end
         end
     end
 end
@@ -43,10 +58,16 @@ end
 
 local mouse = game.Players.LocalPlayer:GetMouse()
 
+-- Mengurangi pembaruan yang terlalu sering
+local lastUpdate = 0
 game:GetService("RunService").RenderStepped:Connect(function()
-    local closestPlayer = GetClosestPlayer()
-    if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        mouse.Hit = CFrame.new(closestPlayer.Character.HumanoidRootPart.Position)
+    local currentTime = tick()
+    if currentTime - lastUpdate > updateInterval then
+        local closestPlayer = GetClosestPlayer()
+        if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            mouse.Hit = CFrame.new(closestPlayer.Character.HumanoidRootPart.Position)
+        end
+        lastUpdate = currentTime
     end
 end)
 
@@ -62,20 +83,29 @@ textLabel.Size = UDim2.new(0, 200, 0, 50)
 textLabel.BackgroundTransparency = 1
 textLabel.TextSize = 20
 
-local function EnableGodMode()
-    local player = game.Players.LocalPlayer
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        local humanoid = player.Character.Humanoid
-        humanoid.Health = humanoid.Health -- Set Health biar ga berkurang
-        humanoid.MaxHealth = math.huge  -- Maksimum kesehatan jadi tak terbatas
-        humanoid.HealthChanged:Connect(function()
-            humanoid.Health = humanoid.MaxHealth -- Reset Health ke max terus
-        end)
+-- Fungsi untuk menjaga TextLabel tetap ada meski karakter mati
+local function KeepTextLabelAlive()
+    while true do
+        if not screenGui.Parent then
+            screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+        end
+        wait(1)
     end
 end
 
-EnableGodMode()
+keepTextLabelAliveThread = coroutine.create(KeepTextLabelAlive)  -- Menjalankan KeepTextLabelAlive
+coroutine.resume(keepTextLabelAliveThread)
 
-while wait(1) do
+-- Fungsi untuk menghapus highlight jika objek terlalu banyak
+local function CleanupHighlights()
+    for player, highlight in pairs(activePlayers) do
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            RemoveESP(player)
+        end
+    end
+end
+
+while wait(updateInterval) do
     ApplyESP()
+    CleanupHighlights()
 end
