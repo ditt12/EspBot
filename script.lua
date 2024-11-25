@@ -92,6 +92,11 @@ game:GetService("Players").PlayerAdded:Connect(function(player)
         -- Create ESP when a new player joins the game
         CreateESP(player)
     end)
+    
+    player.CharacterRemoving:Connect(function(character)
+        -- Remove ESP when a player leaves the game or dies
+        RemoveESP(player)
+    end)
 end)
 
 game:GetService("Players").PlayerRemoving:Connect(function(player)
