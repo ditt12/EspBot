@@ -1,163 +1,87 @@
-local activePlayers = {}
-local updateInterval = 0.1  -- Percepat interval pembaruan menjadi lebih cepat
-local mouse = game.Players.LocalPlayer:GetMouse()
-local localPlayer = game.Players.LocalPlayer
-local closestPlayer = nil
+local players = game:GetService("Players")
+local runService = game:GetService("RunService")
+local player = players.LocalPlayer
+local camera = workspace.CurrentCamera
 
-local magicBulletEnabled = true -- Aktifkan Magic Bullet
-local magicBulletRange = 2000 -- Rentang Magic Bullet lebih jauh
-local magicBulletSize = 20 -- Ukuran Magic Bullet lebih besar
+-- tabel untuk esp aktif
+local activeESP = {}
 
--- Membuat Text Label di PlayerGui yang tetap ada meskipun karakter mati
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-local textLabel = Instance.new("TextLabel")
-textLabel.Parent = screenGui
-textLabel.Text = "©Kelperiens"
-textLabel.TextColor3 = Color3.new(1, 1, 1)
-textLabel.Position = UDim2.new(0, 10, 1, -30)
-textLabel.Size = UDim2.new(0, 200, 0, 50)
-textLabel.BackgroundTransparency = 1
-textLabel.TextSize = 20
-
--- Fungsi untuk membuat ESP
-local function CreateESP(player)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local highlight = Instance.new("Highlight")
-        highlight.Parent = player.Character
-        highlight.FillColor = Color3.fromRGB(255, 255, 255) -- Warna putih
-        highlight.OutlineColor = Color3.new(0, 0, 0)
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.Enabled = true
-        activePlayers[player] = highlight
-    end
+-- fungsi rgb dinamis
+local function getRainbowColor()
+    local hue = tick() % 5 / 5
+    return Color3.fromHSV(hue, 1, 1)
 end
 
--- Fungsi untuk menghapus ESP
-local function RemoveESP(player)
-    if activePlayers[player] then
-        activePlayers[player]:Destroy()
-        activePlayers[player] = nil
-    end
-end
+-- fungsi buat esp
+local function createESP(target)
+    if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
+    if target.Character.HumanoidRootPart:FindFirstChild("ESPBox") then return end
 
--- Fungsi untuk memperbarui ESP untuk semua pemain
-local function ApplyESP()
-    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-        if player ~= localPlayer then
-            if player.Character and not activePlayers[player] then
-                CreateESP(player)
-            elseif player.Character == nil and activePlayers[player] then
-                RemoveESP(player)
-            end
+    local billboard = Instance.new("BillboardGui", target.Character.HumanoidRootPart)
+    billboard.Name = "ESPBox"
+    billboard.Size = UDim2.new(4, 0, 6, 0)
+    billboard.AlwaysOnTop = true
+
+    local frame = Instance.new("Frame", billboard)
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = getRainbowColor()
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+
+    activeESP[target] = billboard
+
+    -- update warna rgb dinamis
+    runService.RenderStepped:Connect(function()
+        if billboard.Parent and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            frame.BackgroundColor3 = getRainbowColor()
         end
+    end)
+end
+
+-- hapus esp kalau target mati
+local function removeESP(target)
+    if activeESP[target] then
+        activeESP[target]:Destroy()
+        activeESP[target] = nil
     end
 end
 
--- Fungsi untuk mendapatkan pemain terdekat
-local function GetClosestPlayer()
-    local shortestDistance = math.huge
-    closestPlayer = nil
-    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local distance = (localPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-            if distance < shortestDistance then
-                closestPlayer = player
-                shortestDistance = distance
-            end
-        end
-    end
-    return closestPlayer
-end
-
--- Fungsi untuk mengunci aim pada kepala pemain terdekat dengan lebih kuat
-local function AimLock()
-    if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
-        local targetPosition = closestPlayer.Character.Head.Position
-        local mousePosition = mouse.Hit.p
-        
-        -- Gunakan smoothing untuk menghaluskan pergerakan aim
-        local direction = (targetPosition - mousePosition).unit
-        local smoothedPosition = mousePosition + direction * 0.2  -- 0.2 adalah faktor smoothing
-
-        -- Update posisi aim
-        mouse.Hit = CFrame.new(smoothedPosition)
+-- fungsi aimlock otomatis
+local function autoAim(target)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPart = target.Character.HumanoidRootPart
+        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
     end
 end
 
--- Fungsi untuk Magic Bullet
-local function FireMagicBullet()
-    if magicBulletEnabled and closestPlayer and closestPlayer.Character then
-        local bulletStartPos = localPlayer.Character.HumanoidRootPart.Position
-        local bulletEndPos = closestPlayer.Character.HumanoidRootPart.Position
-
-        -- Cek jarak tembakan dan periksa lebar Magic Bullet
-        if (bulletStartPos - bulletEndPos).Magnitude <= magicBulletRange then
-            -- Simulasi Magic Bullet dengan lebar lebih besar
-            local bullet = Instance.new("Part")
-            bullet.Size = Vector3.new(magicBulletSize, magicBulletSize, (bulletStartPos - bulletEndPos).Magnitude)
-            bullet.Position = (bulletStartPos + bulletEndPos) / 2
+-- fungsi magic bullet otomatis
+local function magicBullet(target)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPart = target.Character.HumanoidRootPart
+        local direction = (targetPart.Position - player.Character.HumanoidRootPart.Position).Unit
+        for i = 1, 8 do -- peluru lebih banyak
+            local bullet = Instance.new("Part", workspace)
+            bullet.Size = Vector3.new(2, 2, 20) -- peluru lebih lebar dan panjang
             bullet.Anchored = true
             bullet.CanCollide = false
-            bullet.BrickColor = BrickColor.new("Bright red")
-            bullet.Parent = workspace
-
-            -- Bergerak ke target (tembakan instan)
-            local direction = (bulletEndPos - bulletStartPos).unit
-            bullet.CFrame = CFrame.new(bullet.Position, bullet.Position + direction)
-
-            -- Bisa tambah efek atau partikel tembakan di sini
-            game:GetService("TweenService"):Create(bullet, TweenInfo.new(0.2), {Size = Vector3.new(magicBulletSize * 2, magicBulletSize * 2, (bulletStartPos - bulletEndPos).Magnitude * 2)}):Play()
+            bullet.Position = player.Character.HumanoidRootPart.Position + (direction * i * 8)
+            bullet.Color = Color3.new(1, 0, 0)
+            game.Debris:AddItem(bullet, 0.2) -- peluru hilang setelah 0.2s
         end
     end
 end
 
--- Fungsi untuk mendapatkan warna RGB yang berubah seiring waktu
-local function GetRGBColor()
-    local time = tick()
-    local r = math.abs(math.sin(time)) * 255
-    local g = math.abs(math.sin(time + 2)) * 255
-    local b = math.abs(math.sin(time + 4)) * 255
-    return Color3.fromRGB(r, g, b)
-end
-
--- Fungsi untuk memperbarui warna ESP dan TextLabel
-local function UpdateColors()
-    for _, highlight in pairs(activePlayers) do
-        if highlight and highlight.Parent then
-            highlight.FillColor = GetRGBColor()
+-- update esp dan aimlock secara otomatis
+runService.RenderStepped:Connect(function()
+    for _, target in pairs(players:GetPlayers()) do
+        if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            if not activeESP[target] then
+                createESP(target)
+            end
+            autoAim(target) -- aimlock otomatis
+            magicBullet(target) -- magic bullet otomatis
+        else
+            removeESP(target)
         end
     end
-    -- Update warna text label
-    textLabel.TextColor3 = GetRGBColor()
-end
-
--- Menambahkan event untuk membuat ESP ketika pemain baru bergabung
-game:GetService("Players").PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-        wait(1)  -- Tunggu sampai karakter benar-benar muncul
-        CreateESP(player)
-    end)
-    
-    player.CharacterRemoving:Connect(function(character)
-        RemoveESP(player)
-    end)
 end)
-
--- Menghapus ESP ketika pemain meninggalkan game
-game:GetService("Players").PlayerRemoving:Connect(function(player)
-    RemoveESP(player)
-end)
-
--- Loop utama untuk memperbarui ESP, warna, dan Magic Bullet
-while wait(updateInterval) do
-    ApplyESP()
-    UpdateColors()
-    local closest = GetClosestPlayer()
-    if closest then
-        closestPlayer = closest
-        AimLock()
-        FireMagicBullet() -- Tambahkan Magic Bullet di sini
-    end
-end
