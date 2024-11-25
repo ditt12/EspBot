@@ -1,12 +1,12 @@
 local activePlayers = {}
-local updateInterval = 0.5 -- Interval update ESP (lebih jarang supaya tidak memberatkan)
+local updateInterval = 0.5
 
 local function CreateESP(player)
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local highlight = Instance.new("Highlight")
         highlight.Parent = player.Character
-        highlight.FillColor = Color3.new(1, 1, 1) -- Warna putih
-        highlight.OutlineColor = Color3.new(0, 0, 0) -- Outline hitam
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.OutlineColor = Color3.new(0, 0, 0)
         highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         highlight.Enabled = true
         activePlayers[player] = highlight
@@ -32,13 +32,6 @@ local function ApplyESP()
     end
 end
 
-game:GetService("Players").PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        wait(1)
-        CreateESP(player)
-    end)
-end)
-
 local function GetClosestPlayer()
     local localPlayer = game.Players.LocalPlayer
     local closestPlayer = nil
@@ -58,7 +51,14 @@ end
 
 local mouse = game.Players.LocalPlayer:GetMouse()
 
--- Mengurangi pembaruan yang terlalu sering
+local function GetRGBColor()
+    local time = tick()
+    local r = math.abs(math.sin(time)) * 255
+    local g = math.abs(math.sin(time + 2)) * 255
+    local b = math.abs(math.sin(time + 4)) * 255
+    return Color3.fromRGB(r, g, b)
+end
+
 local lastUpdate = 0
 game:GetService("RunService").RenderStepped:Connect(function()
     local currentTime = tick()
@@ -78,12 +78,11 @@ local textLabel = Instance.new("TextLabel")
 textLabel.Parent = screenGui
 textLabel.Text = "©Kelperiens"
 textLabel.TextColor3 = Color3.new(1, 1, 1)
-textLabel.Position = UDim2.new(0, 10, 1, -30)  -- Posisi di kiri bawah
+textLabel.Position = UDim2.new(0, 10, 1, -30)
 textLabel.Size = UDim2.new(0, 200, 0, 50)
 textLabel.BackgroundTransparency = 1
 textLabel.TextSize = 20
 
--- Fungsi untuk menjaga TextLabel tetap ada meski karakter mati
 local function KeepTextLabelAlive()
     while true do
         if not screenGui.Parent then
@@ -93,19 +92,19 @@ local function KeepTextLabelAlive()
     end
 end
 
-keepTextLabelAliveThread = coroutine.create(KeepTextLabelAlive)  -- Menjalankan KeepTextLabelAlive
+keepTextLabelAliveThread = coroutine.create(KeepTextLabelAlive)
 coroutine.resume(keepTextLabelAliveThread)
 
--- Fungsi untuk menghapus highlight jika objek terlalu banyak
-local function CleanupHighlights()
-    for player, highlight in pairs(activePlayers) do
-        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-            RemoveESP(player)
+local function UpdateColors()
+    for _, highlight in pairs(activePlayers) do
+        if highlight and highlight.Parent then
+            highlight.FillColor = GetRGBColor()
         end
     end
+    textLabel.TextColor3 = GetRGBColor()
 end
 
 while wait(updateInterval) do
     ApplyESP()
-    CleanupHighlights()
+    UpdateColors()
 end
