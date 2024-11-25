@@ -8,6 +8,20 @@ local magicBulletEnabled = true -- Aktifkan Magic Bullet
 local magicBulletRange = 2000 -- Rentang Magic Bullet lebih jauh
 local magicBulletSize = 20 -- Ukuran Magic Bullet lebih besar
 
+-- Membuat Text Label di PlayerGui yang tetap ada meskipun karakter mati
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local textLabel = Instance.new("TextLabel")
+textLabel.Parent = screenGui
+textLabel.Text = "©Kelperiens"
+textLabel.TextColor3 = Color3.new(1, 1, 1)
+textLabel.Position = UDim2.new(0, 10, 1, -30)
+textLabel.Size = UDim2.new(0, 200, 0, 50)
+textLabel.BackgroundTransparency = 1
+textLabel.TextSize = 20
+
+-- Fungsi untuk membuat ESP
 local function CreateESP(player)
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local highlight = Instance.new("Highlight")
@@ -20,6 +34,7 @@ local function CreateESP(player)
     end
 end
 
+-- Fungsi untuk menghapus ESP
 local function RemoveESP(player)
     if activePlayers[player] then
         activePlayers[player]:Destroy()
@@ -27,6 +42,7 @@ local function RemoveESP(player)
     end
 end
 
+-- Fungsi untuk memperbarui ESP untuk semua pemain
 local function ApplyESP()
     for _, player in pairs(game:GetService("Players"):GetPlayers()) do
         if player ~= localPlayer then
@@ -39,30 +55,7 @@ local function ApplyESP()
     end
 end
 
-local function UpdateESPOnRespawn(player)
-    -- Cek saat karakter baru respawn, tambahkan ESP lagi
-    player.CharacterAdded:Connect(function(character)
-        wait(1)  -- Tunggu sampai karakter benar-benar muncul
-        CreateESP(player)
-    end)
-end
-
-local function GetRGBColor()
-    local time = tick()
-    local r = math.abs(math.sin(time)) * 255
-    local g = math.abs(math.sin(time + 2)) * 255
-    local b = math.abs(math.sin(time + 4)) * 255
-    return Color3.fromRGB(r, g, b)
-end
-
-local function UpdateColors()
-    for _, highlight in pairs(activePlayers) do
-        if highlight and highlight.Parent then
-            highlight.FillColor = GetRGBColor()
-        end
-    end
-end
-
+-- Fungsi untuk mendapatkan pemain terdekat
 local function GetClosestPlayer()
     local shortestDistance = math.huge
     closestPlayer = nil
@@ -73,19 +66,27 @@ local function GetClosestPlayer()
                 closestPlayer = player
                 shortestDistance = distance
             end
+        end
     end
     return closestPlayer
 end
 
+-- Fungsi untuk mengunci aim pada kepala pemain terdekat dengan lebih kuat
 local function AimLock()
-    if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local targetPosition = closestPlayer.Character.HumanoidRootPart.Position
+    if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("Head") then
+        local targetPosition = closestPlayer.Character.Head.Position
         local mousePosition = mouse.Hit.p
+        
+        -- Gunakan smoothing untuk menghaluskan pergerakan aim
         local direction = (targetPosition - mousePosition).unit
-        mouse.Hit = CFrame.new(targetPosition + direction * 5) -- Ganti angka 5 sesuai kebutuhan
+        local smoothedPosition = mousePosition + direction * 0.2  -- 0.2 adalah faktor smoothing
+
+        -- Update posisi aim
+        mouse.Hit = CFrame.new(smoothedPosition)
     end
 end
 
+-- Fungsi untuk Magic Bullet
 local function FireMagicBullet()
     if magicBulletEnabled and closestPlayer and closestPlayer.Character then
         local bulletStartPos = localPlayer.Character.HumanoidRootPart.Position
@@ -112,39 +113,44 @@ local function FireMagicBullet()
     end
 end
 
--- Pindahkan text label ke PlayerGui agar tidak hilang saat respawn
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+-- Fungsi untuk mendapatkan warna RGB yang berubah seiring waktu
+local function GetRGBColor()
+    local time = tick()
+    local r = math.abs(math.sin(time)) * 255
+    local g = math.abs(math.sin(time + 2)) * 255
+    local b = math.abs(math.sin(time + 4)) * 255
+    return Color3.fromRGB(r, g, b)
+end
 
-local textLabel = Instance.new("TextLabel")
-textLabel.Parent = screenGui
-textLabel.Text = "©Kelperiens"
-textLabel.TextColor3 = Color3.new(1, 1, 1)
-textLabel.Position = UDim2.new(0, 10, 1, -30)
-textLabel.Size = UDim2.new(0, 200, 0, 50)
-textLabel.BackgroundTransparency = 1
-textLabel.TextSize = 20
+-- Fungsi untuk memperbarui warna ESP dan TextLabel
+local function UpdateColors()
+    for _, highlight in pairs(activePlayers) do
+        if highlight and highlight.Parent then
+            highlight.FillColor = GetRGBColor()
+        end
+    end
+    -- Update warna text label
+    textLabel.TextColor3 = GetRGBColor()
+end
 
+-- Menambahkan event untuk membuat ESP ketika pemain baru bergabung
 game:GetService("Players").PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function(character)
-        -- Create ESP when a new player joins the game
+        wait(1)  -- Tunggu sampai karakter benar-benar muncul
         CreateESP(player)
     end)
     
     player.CharacterRemoving:Connect(function(character)
-        -- Remove ESP when a player leaves the game or dies
         RemoveESP(player)
     end)
-
-    -- Update ESP saat respawn
-    UpdateESPOnRespawn(player)
 end)
 
+-- Menghapus ESP ketika pemain meninggalkan game
 game:GetService("Players").PlayerRemoving:Connect(function(player)
-    -- Remove ESP when a player leaves the game
     RemoveESP(player)
 end)
 
+-- Loop utama untuk memperbarui ESP, warna, dan Magic Bullet
 while wait(updateInterval) do
     ApplyESP()
     UpdateColors()
