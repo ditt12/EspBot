@@ -5,13 +5,14 @@ local localPlayer = game.Players.LocalPlayer
 local closestPlayer = nil
 
 local magicBulletEnabled = true -- Aktifkan Magic Bullet
-local magicBulletRange = 500 -- Rentang Magic Bullet
+local magicBulletRange = 1000 -- Rentang Magic Bullet lebih lebar
+local magicBulletSize = 10 -- Ukuran Magic Bullet lebih besar
 
 local function CreateESP(player)
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local highlight = Instance.new("Highlight")
         highlight.Parent = player.Character
-        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.FillColor = Color3.fromRGB(255, 255, 255) -- Warna putih
         highlight.OutlineColor = Color3.new(0, 0, 0)
         highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         highlight.Enabled = true
@@ -91,11 +92,11 @@ local function FireMagicBullet()
         local bulletStartPos = localPlayer.Character.HumanoidRootPart.Position
         local bulletEndPos = closestPlayer.Character.HumanoidRootPart.Position
 
-        -- Cek jarak tembakan
+        -- Cek jarak tembakan dan periksa lebar Magic Bullet
         if (bulletStartPos - bulletEndPos).Magnitude <= magicBulletRange then
-            -- Simulasi Magic Bullet (tembak langsung ke target)
+            -- Simulasi Magic Bullet dengan lebar lebih besar
             local bullet = Instance.new("Part")
-            bullet.Size = Vector3.new(0.2, 0.2, (bulletStartPos - bulletEndPos).Magnitude)
+            bullet.Size = Vector3.new(magicBulletSize, magicBulletSize, (bulletStartPos - bulletEndPos).Magnitude)
             bullet.Position = (bulletStartPos + bulletEndPos) / 2
             bullet.Anchored = true
             bullet.CanCollide = false
