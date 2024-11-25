@@ -1,104 +1,108 @@
-local players = game:GetService("Players")
-local runService = game:GetService("RunService")
-local player = players.LocalPlayer
-local camera = workspace.CurrentCamera
+-- Inisialisasi player
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local espEnabled = true
+local magicBulletEnabled = true
+local aimlockEnabled = true
 
--- tabel untuk esp
-local activeESP = {}
-
--- fungsi rgb dinamis untuk ESP
-local function getRainbowColor()
-    local hue = tick() % 5 / 5
-    return Color3.fromHSV(hue, 1, 1)
-end
-
--- fungsi buat esp
+-- Fungsi untuk membuat ESP
 local function createESP(target)
-    if target.Character and target.Character:FindFirstChild("HumanoidRootPart") and not activeESP[target] then
-        local billboard = Instance.new("BillboardGui", target.Character.HumanoidRootPart)
-        billboard.Name = "ESPBox"
-        billboard.Size = UDim2.new(4, 0, 6, 0)
-        billboard.AlwaysOnTop = true
+    if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local espBox = Instance.new("BillboardGui", target.Character.HumanoidRootPart)
+    espBox.Size = UDim2.new(0, 100, 0, 100)
+    espBox.Adornee = target.Character.HumanoidRootPart
+    espBox.AlwaysOnTop = true
+    espBox.BackgroundTransparency = 1
+    espBox.Name = "ESPBox"
 
-        local frame = Instance.new("Frame", billboard)
-        frame.Size = UDim2.new(1, 0, 1, 0)
-        frame.BackgroundColor3 = getRainbowColor()  -- Menggunakan warna RGB dinamis untuk ESP
-        frame.BackgroundTransparency = 0.5
-        frame.BorderSizePixel = 0
-
-        activeESP[target] = billboard
-
-        -- update warna RGB secara dinamis
-        runService.RenderStepped:Connect(function()
-            if billboard and billboard.Parent and frame then
-                frame.BackgroundColor3 = getRainbowColor()  -- Pastikan tetap warna RGB dinamis
-            end
-        end)
-        
-        -- ESP tetap ada meskipun target mati
-        target.Character:WaitForChild("Humanoid").Died:Connect(function()
-            -- Tanpa menghapus ESP saat mati, jadi tetap ada
-        end)
-    end
+    local espFrame = Instance.new("Frame", espBox)
+    espFrame.Size = UDim2.new(1, 0, 1, 0)
+    espFrame.BackgroundTransparency = 0.5
+    espFrame.BorderSizePixel = 0
+    espFrame.BackgroundColor3 = Color3.fromHSV(tick() % 5 / 5, 1, 1)  -- RGB effect on ESP
+    
+    game.Debris:AddItem(espBox, 10)  -- Hapus ESP setelah 10 detik
 end
 
--- fungsi untuk menghapus ESP
-local function removeESP(target)
-    if activeESP[target] then
-        activeESP[target]:Destroy()
-        activeESP[target] = nil
-    end
-end
-
--- fungsi aimlock otomatis ke target
-local function autoAim(target)
-    if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        local targetPart = target.Character.HumanoidRootPart
-        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
-    end
-end
-
--- magic bullet otomatis
+-- Fungsi magic bullet otomatis yang lebih sedikit dan lebih kecil
 local function magicBullet(target)
     if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
         local targetPart = target.Character.HumanoidRootPart
         local direction = (targetPart.Position - player.Character.HumanoidRootPart.Position).Unit
-        for i = 1, 8 do
+        for i = 1, 4 do  -- Mengurangi jumlah bullet dari 8 menjadi 4
             local bullet = Instance.new("Part", workspace)
-            bullet.Size = Vector3.new(2, 2, 20)
+            bullet.Size = Vector3.new(1, 1, 5)  -- Mengurangi ukuran bullet
             bullet.Anchored = true
             bullet.CanCollide = false
-            bullet.Position = player.Character.HumanoidRootPart.Position + (direction * i * 8)
+            bullet.Position = player.Character.HumanoidRootPart.Position + (direction * i * 5)  -- Mengurangi jarak antar bullet
             bullet.Color = Color3.new(1, 0, 0)  -- Warna merah untuk magic bullet
-            game.Debris:AddItem(bullet, 0.2)
+            bullet.Transparency = 0.8  -- Memberikan transparansi agar tidak terlalu mengganggu pandangan
+            game.Debris:AddItem(bullet, 0.5)  -- Menghapus bullet setelah beberapa detik
         end
     end
 end
 
--- update esp dan aimlock secara otomatis
-runService.RenderStepped:Connect(function()
-    for _, target in pairs(players:GetPlayers()) do
-        if target ~= player and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            if not activeESP[target] then
-                createESP(target)
+-- Fungsi untuk Aimlock
+local function aimlock()
+    if aimlockEnabled then
+        local closestTarget
+        local shortestDistance = math.huge
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local distance = (v.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                if distance < shortestDistance then
+                    closestTarget = v
+                    shortestDistance = distance
+                end
             end
-            autoAim(target) -- aimlock otomatis
-            magicBullet(target) -- magic bullet otomatis
-        else
-            removeESP(target)
+        end
+        
+        if closestTarget then
+            local targetPosition = closestTarget.Character.HumanoidRootPart.Position
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
         end
     end
-end)
+end
 
--- Menambahkan label ©Kelperiens di sudut kiri bawah
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-local label = Instance.new("TextLabel", screenGui)
-label.Size = UDim2.new(0, 200, 0, 50)
-label.Position = UDim2.new(0, 10, 1, -60)  -- Posisi di kiri bawah
-label.Text = "©Kelperiens"
-label.TextColor3 = Color3.new(1, 0, 0)  -- Merah
-label.BackgroundTransparency = 1  -- Transparan
-label.TextSize = 20
-label.Font = Enum.Font.SourceSansBold
-label.TextStrokeTransparency = 0.8
-label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)  -- Memberikan efek bayangan hitam
+-- Label untuk text ©Kelperiens
+local function createLabel()
+    local label = Instance.new("TextLabel", game.CoreGui)
+    label.Text = "©Kelperiens"
+    label.TextColor3 = Color3.fromRGB(255, 0, 0)  -- Merah
+    label.TextSize = 30
+    label.Position = UDim2.new(0, 10, 1, -50)  -- Posisi di kiri bawah
+    label.BackgroundTransparency = 1
+    label.TextStrokeTransparency = 0.5
+end
+
+-- Aktifkan ESP, Magic Bullet, dan Label
+local function activate()
+    createLabel()
+    
+    -- Enable ESP untuk setiap player di server
+    game.Players.PlayerAdded:Connect(function(target)
+        target.CharacterAdded:Connect(function()
+            if espEnabled then
+                createESP(target)
+            end
+        end)
+    end)
+    
+    -- Aktifkan Magic Bullet jika diaktifkan
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if magicBulletEnabled then
+            for _, target in pairs(game.Players:GetPlayers()) do
+                if target ~= player then
+                    magicBullet(target)
+                end
+            end
+        end
+    end)
+
+    -- Aktifkan Aimlock
+    game:GetService("RunService").Heartbeat:Connect(aimlock)
+end
+
+-- Jalankan fungsi utama
+activate()
