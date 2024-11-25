@@ -1,6 +1,6 @@
 ## Usage
 ```bash
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ditt12/espbox/main/script.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ditt12/espbot/main/script.lua"))()
 ```
 # Peringatan 
 ## Jika akun anda terkena banned roblox, itu bukan tanggung jawab saya. Tanggung risiko anda sendiri
