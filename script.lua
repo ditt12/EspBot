@@ -1,5 +1,8 @@
 local activePlayers = {}
 local updateInterval = 0.5
+local mouse = game.Players.LocalPlayer:GetMouse()
+local localPlayer = game.Players.LocalPlayer
+local closestPlayer = nil
 
 local function CreateESP(player)
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -22,7 +25,7 @@ end
 
 local function ApplyESP()
     for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-        if player ~= game.Players.LocalPlayer then
+        if player ~= localPlayer then
             if player.Character and not activePlayers[player] then
                 CreateESP(player)
             elseif player.Character == nil and activePlayers[player] then
@@ -32,11 +35,25 @@ local function ApplyESP()
     end
 end
 
-local function GetClosestPlayer()
-    local localPlayer = game.Players.LocalPlayer
-    local closestPlayer = nil
-    local shortestDistance = math.huge
+local function GetRGBColor()
+    local time = tick()
+    local r = math.abs(math.sin(time)) * 255
+    local g = math.abs(math.sin(time + 2)) * 255
+    local b = math.abs(math.sin(time + 4)) * 255
+    return Color3.fromRGB(r, g, b)
+end
 
+local function UpdateColors()
+    for _, highlight in pairs(activePlayers) do
+        if highlight and highlight.Parent then
+            highlight.FillColor = GetRGBColor()
+        end
+    end
+end
+
+local function GetClosestPlayer()
+    local shortestDistance = math.huge
+    closestPlayer = nil
     for _, player in pairs(game:GetService("Players"):GetPlayers()) do
         if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local distance = (localPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
@@ -49,27 +66,14 @@ local function GetClosestPlayer()
     return closestPlayer
 end
 
-local mouse = game.Players.LocalPlayer:GetMouse()
-
-local function GetRGBColor()
-    local time = tick()
-    local r = math.abs(math.sin(time)) * 255
-    local g = math.abs(math.sin(time + 2)) * 255
-    local b = math.abs(math.sin(time + 4)) * 255
-    return Color3.fromRGB(r, g, b)
-end
-
-local lastUpdate = 0
-game:GetService("RunService").RenderStepped:Connect(function()
-    local currentTime = tick()
-    if currentTime - lastUpdate > updateInterval then
-        local closestPlayer = GetClosestPlayer()
-        if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            mouse.Hit = CFrame.new(closestPlayer.Character.HumanoidRootPart.Position)
-        end
-        lastUpdate = currentTime
+local function AimLock()
+    if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPosition = closestPlayer.Character.HumanoidRootPart.Position
+        local mousePosition = mouse.Hit.p
+        local direction = (targetPosition - mousePosition).unit
+        mouse.Hit = CFrame.new(targetPosition + direction * 5) -- Ganti angka 5 sesuai kebutuhan
     end
-end)
+end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -83,28 +87,24 @@ textLabel.Size = UDim2.new(0, 200, 0, 50)
 textLabel.BackgroundTransparency = 1
 textLabel.TextSize = 20
 
-local function KeepTextLabelAlive()
-    while true do
-        if not screenGui.Parent then
-            screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-        end
-        wait(1)
-    end
-end
+game:GetService("Players").PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        -- Create ESP when a new player joins the game
+        CreateESP(player)
+    end)
+end)
 
-keepTextLabelAliveThread = coroutine.create(KeepTextLabelAlive)
-coroutine.resume(keepTextLabelAliveThread)
-
-local function UpdateColors()
-    for _, highlight in pairs(activePlayers) do
-        if highlight and highlight.Parent then
-            highlight.FillColor = GetRGBColor()
-        end
-    end
-    textLabel.TextColor3 = GetRGBColor()
-end
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    -- Remove ESP when a player leaves the game
+    RemoveESP(player)
+end)
 
 while wait(updateInterval) do
     ApplyESP()
     UpdateColors()
+    local closest = GetClosestPlayer()
+    if closest then
+        closestPlayer = closest
+        AimLock()
+    end
 end
