@@ -1,60 +1,48 @@
--- konfigurasi esp rgb
-local players = game:GetService("Players")
-local runService = game:GetService("RunService")
-local espColor = Color3.new(1, 0, 0) -- default merah
-local espEnabled = true
-local labelColor = Color3.fromRGB(255, 0, 0) -- warna label merah
-local magicBulletEnabled = true
-local aimlockEnabled = true
-local magicBulletRadius = 30 -- jarak magic bullet lebih lebar
+-- ESP dan Magic Bullet script
 
--- fungsi untuk membuat esp
-function createESP(target)
-    if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
+-- Setting warna RGB untuk ESP
+local espColor = Color3.fromRGB(math.random(0, 255), math.random(0, 255), math.random(0, 255)) -- RGB acak
 
-    if target.Character:FindFirstChild("ESPBox") then
-        target.Character.ESPBox:Destroy()
-    end
+-- Magic bullet settings
+local magicBulletRadius = 30 -- radius magic bullet lebih lebar
+local minimumDistance = 1 -- minimal jarak 1 meter
+local magicBulletEnabled = true -- enable magic bullet
 
-    local espBox = Instance.new("BoxHandleAdornment")
-    espBox.Name = "ESPBox"
-    espBox.Size = Vector3.new(4, 6, 4)
-    espBox.Adornee = target.Character:FindFirstChild("HumanoidRootPart")
-    espBox.AlwaysOnTop = true
-    espBox.ZIndex = 10
-    espBox.Color3 = espColor
-    espBox.Parent = target.Character
-end
+-- Label text di kiri bawah
+local textLabel = Instance.new("TextLabel")
+textLabel.Size = UDim2.new(0, 200, 0, 50)
+textLabel.Position = UDim2.new(0, 0, 1, -100)
+textLabel.Text = "©Kelperiens"
+textLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Merah
+textLabel.BackgroundTransparency = 1
+textLabel.Parent = game.CoreGui
 
--- fungsi untuk update warna esp (rgb)
-function updateESPColor()
-    local hue = tick() % 5 / 5 -- rgb animasi
-    espColor = Color3.fromHSV(hue, 1, 1)
-end
+-- Membuat ESP untuk target
+local function createESP(target)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local box = Instance.new("BillboardGui")
+        box.Size = UDim2.new(0, 100, 0, 100)
+        box.Adornee = target.Character.HumanoidRootPart
+        box.StudsOffset = Vector3.new(0, 2, 0)
+        box.Parent = game.CoreGui
 
--- fungsi untuk menampilkan label "©Kelperiens"
-function createLabel(target)
-    if target.Character and not target.Character:FindFirstChild("Label") then
-        local label = Instance.new("TextLabel")
-        label.Name = "Label"
-        label.Text = "©Kelperiens"
-        label.TextColor3 = labelColor
-        label.TextSize = 20
-        label.BackgroundTransparency = 1
-        label.Position = UDim2.new(0, 10, 0, 50)
-        label.Parent = target.Character
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundColor3 = espColor
+        frame.BorderSizePixel = 0
+        frame.Parent = box
     end
 end
 
--- fungsi untuk magic bullet
+-- Fungsi untuk Magic Bullet
 function magicBullet(target)
     if magicBulletEnabled and target.Character then
         local targetPosition = target.Character:FindFirstChild("HumanoidRootPart").Position
         local myPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
         local distance = (targetPosition - myPosition).Magnitude
-        if distance <= magicBulletRadius then
+        
+        -- Cek jika target berada dalam radius magic bullet dan lebih dari atau sama dengan 1 meter
+        if distance <= magicBulletRadius and distance >= minimumDistance then
             -- tembak otomatis ke target yang dalam radius
             local gun = game.Players.LocalPlayer.Character:FindFirstChild("Tool") -- ganti dengan senjata yang dipake
             if gun then
@@ -64,53 +52,25 @@ function magicBullet(target)
     end
 end
 
--- fungsi untuk aimlock
-function aimLock(target)
-    if aimlockEnabled and target.Character then
-        local head = target.Character:FindFirstChild("Head")
-        if head then
-            -- lock pada kepala
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(head.Position)
-        end
-    end
-end
-
--- listener untuk pemain baru
-players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        wait(1) -- delay untuk memastikan karakter ter-load
-        if espEnabled then
-            createESP(player)
-            createLabel(player)
-        end
+-- Membuat ESP otomatis untuk semua pemain yang ada di server
+game.Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        -- Jika karakter pemain muncul, kita buat ESP
+        createESP(player)
     end)
 end)
 
--- update esp untuk semua pemain yang ada
-function updateAllESP()
-    for _, player in pairs(players:GetPlayers()) do
-        if player ~= players.LocalPlayer then
-            if player.Character then
-                createESP(player)
-                createLabel(player)
-            end
-        end
-    end
-end
-
--- loop untuk animasi rgb dan update esp
-runService.RenderStepped:Connect(function()
-    updateESPColor()
-    updateAllESP()
-
-    -- aplikasi magic bullet ke semua musuh yang terdekat
-    for _, player in pairs(players:GetPlayers()) do
-        if player ~= players.LocalPlayer then
-            magicBullet(player)
-            aimLock(player)
+-- Loop untuk terus menerus mengecek dan menembak target
+game:GetService("RunService").RenderStepped:Connect(function()
+    for _, target in ipairs(game.Players:GetPlayers()) do
+        -- Mengecek dan mengaktifkan magic bullet
+        if target ~= game.Players.LocalPlayer then
+            magicBullet(target)
         end
     end
 end)
 
--- otomatis aktif saat dijalankan
-espEnabled = true
+-- Mengaktifkan ESP untuk semua pemain yang sudah ada
+for _, player in ipairs(game.Players:GetPlayers()) do
+    createESP(player)
+end
