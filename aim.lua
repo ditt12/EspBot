@@ -27,12 +27,13 @@ local function findClosestEnemy()
     return closestTarget
 end
 
--- Fungsi untuk mengunci aim ke target
+-- Fungsi untuk mengunci aim ke target (langsung ke Kepala)
 local function aimLock()
     local targetPlayer = findClosestEnemy()
     
     if targetPlayer then
         local targetHead = targetPlayer.Character.Head
+        -- Pastikan CFrame mengarah langsung ke Kepala dengan penyesuaian
         humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetHead.Position)
     end
 end
