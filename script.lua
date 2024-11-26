@@ -3,50 +3,7 @@ local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-local lockDistance = 100  -- Jarak maksimal untuk magic bullet (dalam studs)
-local magicBulletStrength = 1000  -- Kecepatan peluru magic bullet
-local damageAmount = 50  -- Jumlah damage yang diberikan oleh magic bullet
-
--- Fungsi untuk menemukan musuh terdekat
-local function findClosestEnemy()
-    local closestDistance = lockDistance
-    local closestTarget = nil
-    
-    -- Loop untuk mencari semua pemain
-    for _, enemy in ipairs(game.Players:GetPlayers()) do
-        if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
-            local enemyRootPart = enemy.Character.HumanoidRootPart
-            local distance = (humanoidRootPart.Position - enemyRootPart.Position).Magnitude
-            
-            -- Menyimpan target terdekat
-            if distance < closestDistance then
-                closestDistance = distance
-                closestTarget = enemy
-            end
-        end
-    end
-    
-    return closestTarget
-end
-
--- Fungsi untuk menembakkan magic bullet ke musuh
-local function magicBullet()
-    local targetPlayer = findClosestEnemy()
-    
-    if targetPlayer then
-        local targetRootPart = targetPlayer.Character.HumanoidRootPart
-        -- Membuat raycast untuk menembak magic bullet yang mengarah langsung ke target
-        local ray = Ray.new(humanoidRootPart.Position, (targetRootPart.Position - humanoidRootPart.Position).unit * lockDistance)
-        local hitPart, hitPosition = game.Workspace:FindPartOnRay(ray, character)
-        
-        -- Cek jika terkena musuh dan bukan halangan
-        if hitPart and hitPart.Parent == targetPlayer.Character then
-            -- Magic bullet mengarah tepat ke musuh
-            targetPlayer.Character:TakeDamage(damageAmount)  -- Memberikan damage ke target
-            print("Magic bullet mengenai target!")
-        end
-    end
-end
+local lockDistance = 100  -- Jarak maksimal untuk aimlock (dalam studs)
 
 -- Fungsi untuk membuat ESP karakter musuh
 local function createESP(target)
@@ -70,6 +27,38 @@ local function createESP(target)
     label.Parent = box
 end
 
+-- Fungsi untuk mencari musuh terdekat
+local function findClosestEnemy()
+    local closestDistance = lockDistance
+    local closestTarget = nil
+    
+    -- Loop untuk mencari semua pemain
+    for _, enemy in ipairs(game.Players:GetPlayers()) do
+        if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
+            local enemyRootPart = enemy.Character.HumanoidRootPart
+            local distance = (humanoidRootPart.Position - enemyRootPart.Position).Magnitude
+            
+            -- Menyimpan target terdekat
+            if distance < closestDistance then
+                closestDistance = distance
+                closestTarget = enemy
+            end
+        end
+    end
+    
+    return closestTarget
+end
+
+-- Fungsi untuk mengunci aim ke target
+local function aimLock()
+    local targetPlayer = findClosestEnemy()
+    
+    if targetPlayer then
+        local targetRootPart = targetPlayer.Character.HumanoidRootPart
+        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetRootPart.Position)
+    end
+end
+
 -- Fungsi untuk memperbarui ESP
 local function updateESP()
     for _, enemy in pairs(game.Players:GetPlayers()) do
@@ -84,9 +73,9 @@ local function updateESP()
     end
 end
 
--- Menjalankan magic bullet dan ESP setiap interval
+-- Menjalankan update ESP setiap 1 detik
 while true do
-    magicBullet()  -- Tembakkan magic bullet ke musuh terdekat
     updateESP()  -- Memperbarui ESP untuk setiap pemain
-    wait(0.1)  -- Interval update
+    aimLock()    -- Mengaktifkan aimlock
+    wait(0.1)    -- Update setiap 0.1 detik
 end
