@@ -27,13 +27,19 @@ local function findClosestEnemy()
     return closestTarget
 end
 
--- Fungsi untuk mengunci aim ke kepala musuh
+-- Fungsi untuk mengunci aim ke kepala musuh dengan nempel
 local function aimLock()
     local targetPlayer = findClosestEnemy()
     
     if targetPlayer then
         local targetHead = targetPlayer.Character.Head  -- Mengarah ke bagian kepala musuh
-        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetHead.Position)
+        
+        -- Menggunakan CFrame.lookAt agar karakter menghadap ke target dengan tepat
+        local lookAtPosition = targetHead.Position
+        local newCFrame = CFrame.lookAt(humanoidRootPart.Position, lookAtPosition)
+        
+        -- Update posisi karakter untuk menghadap target
+        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, lookAtPosition)  -- Nempel ke kepala musuh
     end
 end
 
