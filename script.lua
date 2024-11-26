@@ -46,6 +46,7 @@ function magicBullet(target)
             -- tembak otomatis ke target yang dalam radius
             local gun = game.Players.LocalPlayer.Character:FindFirstChild("Tool") -- ganti dengan senjata yang dipake
             if gun then
+                -- Aktivasi tembakan ke target
                 gun:Activate()
             end
         end
@@ -63,9 +64,16 @@ end)
 -- Loop untuk terus menerus mengecek dan menembak target
 game:GetService("RunService").RenderStepped:Connect(function()
     for _, target in ipairs(game.Players:GetPlayers()) do
-        -- Mengecek dan mengaktifkan magic bullet
+        -- Mengecek apakah target ada di dalam ESP dan menembak mereka dengan magic bullet
         if target ~= game.Players.LocalPlayer then
-            magicBullet(target)
+            -- Cek apakah target ada dalam jangkauan ESP
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                -- Membuat ESP untuk target yang baru
+                createESP(target)
+
+                -- Mengecek dan mengaktifkan magic bullet untuk target yang terlihat
+                magicBullet(target)
+            end
         end
     end
 end)
