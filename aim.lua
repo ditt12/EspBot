@@ -4,7 +4,6 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 local lockDistance = 100  -- Jarak maksimal untuk aimlock (dalam studs)
-local aimlockEnabled = true  -- Variabel untuk mengaktifkan/mematikan aimlock
 
 -- Fungsi untuk mencari musuh terdekat
 local function findClosestEnemy()
@@ -30,7 +29,6 @@ end
 
 -- Fungsi untuk mengunci aim ke target
 local function aimLock()
-    if not aimlockEnabled then return end  -- Cek apakah Aimlock aktif
     local targetPlayer = findClosestEnemy()
     
     if targetPlayer then
@@ -42,17 +40,5 @@ end
 -- Menjalankan aimlock terus menerus
 while true do
     wait(0.1)  -- Interval update
-    aimLock()  -- Mengaktifkan aimlock jika aktif
+    aimLock()  -- Mengaktifkan aimlock otomatis
 end
-
--- Fungsi untuk tombol On/Off Aimlock
-local function toggleAimlock()
-    aimlockEnabled = not aimlockEnabled  -- Mengubah status Aimlock
-end
-
--- Memanggil fungsi toggle saat tombol ditekan (contoh dengan penggunaan tombol tertentu)
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.F then  -- Tekan tombol F untuk toggle Aimlock
-        toggleAimlock()
-    end
-end)
