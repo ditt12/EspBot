@@ -12,9 +12,9 @@ local function findClosestEnemy()
     
     -- Loop untuk mencari semua pemain
     for _, enemy in ipairs(game.Players:GetPlayers()) do
-        if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
-            local enemyRootPart = enemy.Character.HumanoidRootPart
-            local distance = (humanoidRootPart.Position - enemyRootPart.Position).Magnitude
+        if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("Head") then
+            local enemyHead = enemy.Character.Head  -- Menggunakan Head sebagai target
+            local distance = (humanoidRootPart.Position - enemyHead.Position).Magnitude
             
             -- Menyimpan target terdekat
             if distance < closestDistance then
@@ -27,13 +27,13 @@ local function findClosestEnemy()
     return closestTarget
 end
 
--- Fungsi untuk mengunci aim ke target
+-- Fungsi untuk mengunci aim ke kepala musuh
 local function aimLock()
     local targetPlayer = findClosestEnemy()
     
     if targetPlayer then
-        local targetRootPart = targetPlayer.Character.HumanoidRootPart
-        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetRootPart.Position)
+        local targetHead = targetPlayer.Character.Head  -- Mengarah ke bagian kepala musuh
+        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetHead.Position)
     end
 end
 
