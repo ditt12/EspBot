@@ -5,7 +5,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 local lockDistance = 50  -- Jarak maksimal untuk aimlock (dalam studs)
-local aimStrength = 0.85  -- Kekuatan aimlock 85%
+local aimStrength = 0.95  -- Kekuatan aimlock 85%
 
 -- Fungsi untuk mencari musuh terdekat
 local function findClosestEnemy()
