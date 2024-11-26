@@ -2,6 +2,18 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
+-- buat label ©kelperiens
+local label = Instance.new("ScreenGui", game.CoreGui)
+local textLabel = Instance.new("TextLabel")
+textLabel.Parent = label
+textLabel.Size = UDim2.new(0, 200, 0, 50)
+textLabel.Position = UDim2.new(0, 10, 1, -60)
+textLabel.Text = "©kelperiens"
+textLabel.TextColor3 = Color3.new(1, 0, 0) -- merah
+textLabel.BackgroundTransparency = 1
+textLabel.Font = Enum.Font.SourceSans
+textLabel.TextSize = 18
+
 function CreateESP(target)
     if target:FindFirstChild("Humanoid") and not target:FindFirstChild("ESPBox") then
         local espBox = Instance.new("BoxHandleAdornment")
