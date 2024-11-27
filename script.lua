@@ -4,7 +4,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
 -- Kecepatan jalan yang diinginkan
-local boostedWalkSpeed = 50  -- Atur kecepatan berjalan sesuai keinginan
+local boostedWalkSpeed = 100000  -- Atur kecepatan berjalan sesuai keinginan
 
 -- Fungsi untuk memastikan WalkSpeed tetap diperbarui
 local function applyWalkSpeed()
