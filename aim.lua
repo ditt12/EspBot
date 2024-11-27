@@ -2,6 +2,7 @@
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local camera = game.Workspace.CurrentCamera  -- Ambil kamera dari game
 
 local lockDistance = 100  -- Jarak maksimal untuk aimlock (dalam studs)
 
@@ -27,21 +28,24 @@ local function findClosestEnemy()
     return closestTarget
 end
 
--- Fungsi untuk mengunci aim ke target
+-- Fungsi untuk mengunci aim ke target (ke kepala atau badan)
 local function aimLock()
     local targetPlayer = findClosestEnemy()
-    
+
     if targetPlayer then
         local targetRootPart = targetPlayer.Character.HumanoidRootPart
-        local direction = (targetRootPart.Position - humanoidRootPart.Position).unit
+        local targetPosition = targetRootPart.Position
+
+        -- Mengunci CFrame humanoidRootPart dan juga menggerakkan kamera ke target
+        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetPosition)
         
-        -- Arahkan humanoidRootPart ke target dengan perbaikan untuk posisi nempel
-        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetRootPart.Position) * CFrame.Angles(0, math.atan2(direction.X, direction.Z), 0)
+        -- Menggerakkan kamera mengikuti target
+        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPosition)
     end
 end
 
--- Loop aimlock diperbarui setiap 1 detik
+-- Menjalankan aimlock terus menerus
 while true do
+    wait(1)  -- Interval update 1 detik
     aimLock()
-    wait(1)  -- Update aimlock setiap 1 detik
 end
