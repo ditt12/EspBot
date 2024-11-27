@@ -1,7 +1,7 @@
 local player = game.Players.LocalPlayer
 
-local boostedWalkSpeed = 50
-local boostedJumpPower = 100
+local boostedWalkSpeed = 5000
+local boostedJumpPower = 2000
 
 local function applyBoosts(character)
     local humanoid = character:WaitForChild("Humanoid", 5)
