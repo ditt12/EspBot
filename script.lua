@@ -1,27 +1,22 @@
--- Inisialisasi
 local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
 
--- Kecepatan jalan yang diinginkan
-local boostedWalkSpeed = 100000  -- Atur kecepatan berjalan sesuai keinginan
+local boostedWalkSpeed = 50
+local boostedJumpPower = 100
 
--- Fungsi untuk memastikan WalkSpeed tetap diperbarui
-local function applyWalkSpeed()
-    while true do
-        if humanoid then
-            humanoid.WalkSpeed = boostedWalkSpeed
-        end
-        wait(1)  -- Perbarui setiap 1 detik
+local function applyBoosts(character)
+    local humanoid = character:WaitForChild("Humanoid", 5)
+    if humanoid then
+        humanoid.WalkSpeed = boostedWalkSpeed
+        humanoid.JumpPower = boostedJumpPower
     end
 end
 
--- Pastikan script berjalan ulang jika karakter respawn
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
-    humanoid = character:WaitForChild("Humanoid")
-    humanoid.WalkSpeed = boostedWalkSpeed
-end)
+local function onCharacterAdded(character)
+    applyBoosts(character)
+end
 
--- Jalankan loop untuk memperbarui WalkSpeed
-applyWalkSpeed()
+player.CharacterAdded:Connect(onCharacterAdded)
+
+if player.Character then
+    applyBoosts(player.Character)
+end
