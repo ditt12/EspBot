@@ -1,51 +1,39 @@
--- Inisialisasi
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local camera = game.Workspace.CurrentCamera  -- Ambil kamera dari game
+-- Aimlock 100% Script dengan Repeat setiap 1 detik
+local Player = game.Players.LocalPlayer
+local Mouse = Player:GetMouse()
+local Target
+local LockSpeed = 0.1
 
-local lockDistance = 100  -- Jarak maksimal untuk aimlock (dalam studs)
+function getTarget()
+    local closestTarget
+    local shortestDistance = math.huge
 
--- Fungsi untuk mencari musuh terdekat
-local function findClosestEnemy()
-    local closestDistance = lockDistance
-    local closestTarget = nil
-
-    -- Loop untuk mencari semua pemain
-    for _, enemy in ipairs(game.Players:GetPlayers()) do
-        if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("HumanoidRootPart") then
-            local enemyRootPart = enemy.Character.HumanoidRootPart
-            local distance = (humanoidRootPart.Position - enemyRootPart.Position).Magnitude
-
-            -- Menyimpan target terdekat
-            if distance < closestDistance then
-                closestDistance = distance
-                closestTarget = enemy
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v.Character and v.Character:FindFirstChild("Head") and v ~= Player then
+            local distance = (v.Character.Head.Position - Player.Character.Head.Position).magnitude
+            if distance < shortestDistance then
+                closestTarget = v
+                shortestDistance = distance
             end
         end
     end
-
     return closestTarget
 end
 
--- Fungsi untuk mengunci aim ke target (ke kepala atau badan)
-local function aimLock()
-    local targetPlayer = findClosestEnemy()
-
-    if targetPlayer then
-        local targetRootPart = targetPlayer.Character.HumanoidRootPart
-        local targetPosition = targetRootPart.Position
-
-        -- Mengunci CFrame humanoidRootPart dan juga menggerakkan kamera ke target
-        humanoidRootPart.CFrame = CFrame.new(humanoidRootPart.Position, targetPosition)
-        
-        -- Menggerakkan kamera mengikuti target
-        camera.CFrame = CFrame.new(camera.CFrame.Position, targetPosition)
+function aimAtTarget(target)
+    if target then
+        local headPos = target.Character.Head.Position
+        local mousePos = Mouse.Hit.p
+        local direction = (headPos - mousePos).unit
+        local newPos = mousePos + direction * LockSpeed
+        Mouse.Hit = CFrame.new(newPos)
     end
 end
 
--- Menjalankan aimlock terus menerus
 while true do
-    wait(1)  -- Interval update 1 detik
-    aimLock()
+    wait(1)  -- Repeat setiap 1 detik
+    Target = getTarget()
+    if Target then
+        aimAtTarget(Target)
+    end
 end
